@@ -1,0 +1,377 @@
+package com.main;
+
+import java.util.ArrayList;
+import java.util.Scanner;
+
+public class BattleSystem_Backup {
+    Scanner sc = new Scanner(System.in);
+    private boolean isBattleStopped = false;
+    private Integer turn;
+
+    // untuk menyimpan data arraylist hero & enemy yang diambil dari gameEngine
+    private ArrayList<Hero> objHeroes = new ArrayList<>();
+    private ArrayList<Enemy> objEnemies = new ArrayList<>();
+
+    // getter & setter
+    public Integer getTurn() { return turn; }
+
+    public void setTurn(Integer vTurn) { turn = vTurn; }
+
+    public ArrayList<Hero> getObjHeroes() { return objHeroes; }
+
+    public void setObjHeroes(ArrayList<Hero> vObjHeroes) { objHeroes = vObjHeroes; }
+
+    public ArrayList<Enemy> getObjEnemies() { return objEnemies; }
+
+    public void setObjEnemies(ArrayList<Enemy> vObjEnemies) { objEnemies = vObjEnemies; }
+
+    // methods
+    public void addHeroes(Hero vObjHero) {
+        objHeroes.add(vObjHero);
+    }
+
+    public void addEnemies(Enemy vObjEnemy) {
+        objEnemies.add(vObjEnemy);
+    }
+
+    public void printHeroes() {
+        this.objHeroes.forEach((objHero) -> {
+            int i = 1;
+            System.out.print("[" + i + "] " + objHero.getName());
+            i++;
+
+            if (objHero.isAction() == true) {
+                System.out.println(" -> has take action");
+            } else {
+                System.out.println("");
+            }
+        });
+
+    }
+
+    public void printEnemies() {
+        this.objEnemies.forEach((objEnemy) -> {
+            int i = 1;
+            System.out.println("[" + i + "] " + objEnemy.getName());
+            i++;
+        });
+    }
+
+    public void recoveryItemMenu(Inventory objInventory) {
+        System.out.println("\n======================================");
+        objInventory.printRecItemsInventory();
+        System.out.println("\n======================================");
+
+        if (objInventory.getObjRecoveryItems().isEmpty() == false) {
+            System.out.print("Choose recovery item number to use : ");
+            int recItemChoice = sc.nextInt();
+            objHero.useRecItem(recItemChoice);
+        } else {
+//            calculateBattle();
+        }
+    }
+
+    public void checkBattleCondition(Hero objHero, Enemy objEnemy) {
+        if (objHero.getHealth() <= 0) {
+            System.out.println("\n======================================");
+            System.out.println("                Defeat!");
+            System.out.println("======================================");
+
+            objHero.setHealth(1);
+            objEnemy.setHealth(objEnemy.getMaxHealth());
+            isBattleStopped = true;
+        } else if (objEnemy.getHealth() <= 0) {
+            System.out.println("\n======================================");
+            System.out.println("                Victory!");
+            System.out.println("======================================");
+
+            objHero.setExp(objHero.getExp() + objEnemy.getExp());
+            Hero.getInventory().setGold(Hero.getInventory().getGold() + objEnemy.getEnemyGold());
+            Hero.getInventory().addMaterial(objEnemy.getMaterials().get(0));
+
+            Hero.getActiveRoom().getObjEnemies().remove(0);
+            isBattleStopped = true;
+        }
+    }
+
+    public void checkShields(GameCharacter objCharacter, GameCharacter defender, Skill objSkill, double totalDamage) {
+        if (defender.getShields() > 0) {
+            defender.setShields((int) (defender.getShields() - objSkill.damageDeals(objCharacter)));
+
+            if (defender.getShields() < 0) {
+                defender.setShields(0);
+            }
+        } else {
+
+            if (totalDamage < 0) {
+                totalDamage = 0;
+            } else {
+                defender.setHealth(defender.getHealth() - (int) totalDamage);
+            }
+        }
+    }
+
+    public void heroSkill(Skill objSkill) {
+        double totalDamage;
+
+        totalDamage = objSkill.damageDeals(objHero) - objEnemy.getShields();
+
+        // Hancurkan shields terlebih dahulu
+        checkShields(objHero, objEnemy, objSkill, totalDamage);
+
+        // if (objEnemy.getShields() > 0) {
+        // objEnemy.setShields((int) (objEnemy.getShields() -
+        // objSkill.damageDeals(objHero)));
+        // if (defender.getShields() < 0) {
+        // defender.setShields(0);
+        // }
+        // } else {
+        // if (totalDamage < 0) {
+        // totalDamage = 0;
+        // } else {
+        // objEnemy.setHealth(objEnemy.getHealth() - (int) totalDamage);
+        // }
+        // }
+
+    }
+
+    public void enemySkill() {
+        double totalDamage;
+
+        if (turn % 4 == 0) {
+            totalDamage = objEnemy.takeSkillHM(2).damageDeals(objEnemy) - objHero.getShields();
+            checkShields(objEnemy, objHero, objEnemy.takeSkillHM(2), totalDamage);
+        } else if (turn % 6 == 0) {
+            totalDamage = objEnemy.takeSkillHM(3).damageDeals(objEnemy) - objHero.getShields();
+            checkShields(objEnemy, objHero, objEnemy.takeSkillHM(3), totalDamage);
+        } else {
+            totalDamage = objEnemy.takeSkillHM(1).damageDeals(objEnemy) - objHero.getShields();
+            checkShields(objEnemy, objHero, objEnemy.takeSkillHM(1), totalDamage);
+        }
+
+        // if (totalDamage < 0) {
+        // totalDamage = 0;
+        // }
+
+        // objHero.setHealth(objHero.getHealth() - (int) totalDamage);
+    }
+
+    public void heroMenu() {
+        System.out.println("\n======================================");
+        System.out.println("               Your Hero");
+        System.out.println("======================================");
+
+        int heroIndex = 1;
+
+        for (Hero objHero : objHeroes) {
+            System.out.println("\n===============");
+            System.out.print(objHero.getName());
+
+            if (objHero.isAction() == true) {
+                System.out.println(" -> has taken an action");
+            } else {
+                System.out.println("");
+            }
+
+            System.out.println("===============");
+
+            objHero.printSkill(heroIndex);
+            heroIndex++;
+        }
+
+        System.out.print("Select your choice: ");
+        String userChoice = sc.next();
+
+        // ambil digit pertama, asumsikan jumlah hero di dalam array tidak lebih dari 10
+        int hero = Integer.parseInt(userChoice.substring(0, 1));
+        // ambil digit kedua, asumsikan jumlah skill di dalam array tidak lebih dari 10
+        int skill = Integer.parseInt(userChoice.substring(1, 2));
+
+        Hero selectHero = objHeroes.get(hero - 1);
+        Skill selectSkill = selectHero.takeSkillHM(skill);
+
+        // pilih target apakah ke hero atau ke enemy
+        // skill yang menambah health dan shields, targetnya hero lain
+        // skill yang memberikan damageDeals, targetnya enemy
+    }
+
+    public Hero selectHero() {
+        // tadinya kalau menu hero sama aksi hero dipisah, ini mau dipakai
+        System.out.println("\n======================================");
+        System.out.println("               Select Hero");
+        System.out.println("======================================");
+        printHeroes();
+        System.out.println("======================================");
+        System.out.print("Select hero to do an action: ");
+
+        Hero tempHero = null;
+        int selectHero = sc.nextInt();
+
+        try {
+            if (objHeroes.get((selectHero - 1)).isAction() == false) {
+                tempHero = objHeroes.get((selectHero - 1));
+            } else {
+                System.out.println("\nSelect another hero!");
+                System.out.println("This hero has already been take an action!");
+                selectHero();
+            }
+        } catch (Exception e) {
+            System.out.println("Your input doesn't valid!");
+            selectHero();
+        }
+
+        return tempHero;
+    }
+
+    public Enemy selectEnemyTarget() {
+        System.out.println("\n======================================");
+        System.out.println("               Select Enemy");
+        System.out.println("======================================");
+        printEnemies();
+        System.out.println("======================================");
+        System.out.print("Select enemy for hero action target: ");
+
+        Enemy tempEnemy = null;
+        int selectEnemy = sc.nextInt();
+
+        try {
+            tempEnemy = objEnemies.get((selectEnemy - 1));
+        } catch (IllegalArgumentException e) {
+            System.out.println("Your input doesn't valid!");
+            selectEnemyTarget();
+        }
+
+        return tempEnemy;
+    }
+
+    public void selectHeroAction(int userChoice) {
+        // tadinya kalau menu hero sama aksi hero dipisah, ini mau dipakai
+        System.out.println("\n======================================");
+        System.out.println("          Hero Battle Action");
+        System.out.println("======================================");
+        // tampilkan array skill milik hero
+        this.objHeroes.get(userChoice - 1).printSkill();
+        System.out.println("======================================");
+        System.out.print("Choose hero action: ");
+
+        int selectHeroAction = sc.nextInt();
+    }
+
+    public void calculateBattle(Hero objHero, Enemy objEnemy) {
+        // 1. pilih hero
+        // 2. pilih aksi hero -> aksi hero memiliki atribut "Value",
+        // untuk menampung data damage, heal, ataupun shield.
+        // 3. pilih salah satu enemy atau hero sebagai target skill
+        // 4. looping sampai semua hero memilih skill
+
+        objHero.describe();
+        objEnemy.describe();
+    }
+
+    public void startBattle() {
+        turn = 1;
+
+        while (!isBattleStopped) {
+            heroMenu();
+            // Hero objHero = selectHero();
+            // Enemy objEnemy = selectEnemy();
+            // calculateBattle(objHero, objEnemy);
+            setTurn(getTurn() + 1);
+        }
+    }
+}
+
+// System.out.println("\n======================================");
+// System.out.println("Turn " + turn);
+// System.out.println("======================================");
+
+// System.out.println("\n======================================");
+// System.out.println(" Hero Action");
+// System.out.println("======================================");
+// System.out.println("[1] Light Skill");
+// System.out.println("[2] Heavy Skill");
+// System.out.println("[3] Skill Skill");
+// System.out.println("[4] Use Recovery Item");
+// System.out.println("[5] Run Away");
+// System.out.println("======================================");
+// System.out.print("Choose your hero action : ");
+
+// int battleChoice = sc.nextInt();
+// switch (battleChoice) {
+// case 1:
+// heroSkill(objHero.takeSkillHM(1));
+
+// checkBattleCondition();
+// if (isBattleStopped) {
+// break;
+// }
+
+// enemySkill();
+
+// checkBattleCondition();
+// if (isBattleStopped) {
+// break;
+// }
+// break;
+// case 2:
+// if (turn % 2 == 0) {
+// heroSkill(objHero.takeSkillHM(2));
+
+// checkBattleCondition();
+// if (isBattleStopped) {
+// break;
+// }
+
+// enemySkill();
+
+// checkBattleCondition();
+// if (isBattleStopped) {
+// break;
+// }
+// } else {
+// System.out.println("This option is inactive");
+// calculateBattle(objHero, objEnemy);
+// }
+// break;
+// case 3:
+// if (turn % 3 == 0) {
+// heroSkill(objHero.takeSkillHM(3));
+
+// checkBattleCondition();
+// if (isBattleStopped) {
+// break;
+// }
+
+// enemySkill();
+
+// checkBattleCondition();
+// if (isBattleStopped) {
+// break;
+// }
+// } else {
+// System.out.println("This option is inactive");
+// calculateBattle(objHero, objEnemy);
+// }
+// break;
+// case 4:
+// recoveryItemMenu();
+
+// enemySkill();
+
+// checkBattleCondition();
+// if (isBattleStopped) {
+// break;
+// }
+// break;
+// case 5:
+// System.out.println("\n======================================");
+// System.out.println(" Defeat!");
+// System.out.println("======================================");
+
+// objEnemy.setHealth(objEnemy.getMaxHealth());
+// isBattleStopped = true;
+// break;
+// default:
+// System.out.println("Your input doesn't valid!");
+// break;
+// }
